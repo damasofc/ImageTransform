@@ -1,0 +1,6 @@
+main
+/imagesTest
+/.vscode
+/build
+*.jpeg
+run.sh
