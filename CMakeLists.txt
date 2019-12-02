@@ -1,14 +1,17 @@
-cmake_minimum_required (VERSION 2.8)
-project (filterImages)
+cmake_minimum_required(VERSION 3.5)
+project(hello LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-add_executable(${PROJECT_NAME}  main.cpp )
+add_executable(hello main.cpp)
+target_compile_features(hello PRIVATE cxx_std_11)
+find_package(ImageMagick REQUIRED COMPONENTS Magick++)
+target_compile_definitions(hello PRIVATE
+  MAGICKCORE_QUANTUM_DEPTH=16
+  MAGICKCORE_HDRI_ENABLE=0
+)
+target_include_directories(hello PRIVATE ${ImageMagick_INCLUDE_DIRS})
 
-add_definitions( -DMAGICKCORE_QUANTUM_DEPTH=64 )
-add_definitions( -DMAGICKCORE_HDRI_ENABLE=0 )
-find_package(ImageMagick COMPONENTS Magick++ MagickCore)
-include_directories(${ImageMagick_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} ${ImageMagick_LIBRARIES})
-
-include_directories(${PROJECT_SOURCE_DIR})
+execute_process(COMMAND Magick++-config --ldflags
+  OUTPUT_VARIABLE ImageMagick_LINK_FLAGS
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+target_link_libraries(hello PRIVATE ${ImageMagick_LINK_FLAGS})

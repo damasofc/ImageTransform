@@ -9,26 +9,48 @@ using namespace std;
 
 using namespace Magick;
 
-Image applyFilter(Image &image, vector<vector<double>> kernel);
+Image applyFilterGaussian(Image &image, vector<vector<double>> kernel);
+
 Image applyFilterGrayScale(Image &image);
+
+vector<vector<double>> getGaussianKernel(int w, int h,double sigma);
 int main( int argc, char const *argv[])
 {
 
-  // Initialize ImageMagick install location for Windows
   InitializeMagick(*argv);
-  // cout << "Read images ..." << endl;
-  vector<vector<double>> kernel{
-    {0,-1,0},
-    {-1,5,-1},
-    {0,-1,0}
-    };
-  
-  Image model("../imagesTest/plotly.png" );
-  applyFilterGrayScale(model);
+  if(argc >= 3){
+		string type = argv[1];
+    Image model;
+    if(type.compare("-gray") == 0){
+      model = Image(argv[2]);
+      if(argc > 3){
+        applyFilterGrayScale(model).write(argv[4]);
+      }else
+      {
+        applyFilterGrayScale(model).write("newGrayScaleImage.jpeg");
+      }
+    }
+    else if(type.compare("-gaus") == 0){
+      vector<vector<double>> kernel = getGaussianKernel(5,5,10.0);
+      model = Image(argv[2]);
+      if(argc > 3){
+        applyFilterGaussian(model,kernel).write(argv[4]);
+      }else
+      {
+        applyFilterGaussian(model,kernel).write("newGrayScaleImage.jpeg");
+      }
+    }
+	}
+  else
+  {
+    cout<<"You have to run the program like this examples: "<<endl;
+    cout<<"\t1. ./main -gray <image_path> -name <new_image_path> "<<endl;
+    cout<<"\t2. ./main -gaus <image_path> -name <new_image_path> "<<endl;
+    cout<<"\t3. ./main -gray -f <image_folders> "<<endl;
+    cout<<"\t4. ./main -gaus -f <image_folders> "<<endl;
+    return 0;
+  }
 
-  // cout<< model.pixelColor(50,50).quantumRed()<<endl;
-
-  // cout<<model.size().width()<<endl;
 }
 
 Image applyFilterGaussian(Image &image, vector<vector<double>> kernel)
@@ -44,23 +66,20 @@ Image applyFilterGaussian(Image &image, vector<vector<double>> kernel)
 
   MagickCore::Quantum *pixels = imgN.getPixels(0,0,imageW,imageH);
   int i,j,h,w;
-  for (i=0 ; i<imageW ; i++) {
-    for (j=0 ; j<imageH ; j++) {
-      for (h=i ; h<i+kernelW ; h++) {
-        for (w=j ; w<j+kernelH ; w++) { 
-          unsigned offset = imgN.channels() * (imageW * j + i);
-          pixels[offset + 0] = kernel[h-i][w-j] * image.pixelColor(i,j).quantumRed();
-          pixels[offset + 1] = kernel[h-i][w-j] * image.pixelColor(i,j).quantumGreen();
-          pixels[offset + 2] = kernel[h-i][w-j] * image.pixelColor(i,j).quantumBlue();
-            // newImage[d][i][j] += filter[h-i][w-j]*image[d][h][w];
+  for (i=0 ; i<imageH ; i++) {
+    for (j=0 ; j<imageW ; j++) {
+      for (h=i ; h<i+kernelH ; h++) {
+        for (w=j ; w<j+kernelW ; w++) {
+          unsigned offset = imgN.channels() * (imageW * i + j);
+          pixels[offset + 0] = kernel[h-i][w-j] * image.pixelColor(h,w).quantumRed();
+          pixels[offset + 1] = kernel[h-i][w-j] * image.pixelColor(h,w).quantumGreen();
+          pixels[offset + 2] = kernel[h-i][w-j] * image.pixelColor(h,w).quantumBlue();
         }
       }
     }
   }
 
   imgN.syncPixels();
-
-  imgN.write("pruebaImagen.jpeg");
   return imgN;
 }
 
@@ -89,7 +108,33 @@ Image applyFilterGrayScale(Image &image)
   }
 
   imgN.syncPixels();
-
-  imgN.write("../grayscale.jpeg");
   return imgN;
+}
+
+vector<vector<double>> getGaussianKernel(int w, int h,double sigma)
+{
+  vector<vector<double>> res = vector<vector<double>>();
+  double sum = 0.0;
+  for (size_t i = 0; i < h; i++)
+  {
+    res.push_back(vector<double>());
+    for (size_t j = 0; j < w; j++)
+    {
+      double gaussianVal = exp(-(i*i+j*j)/(2*sigma*sigma))/(2*M_PI*sigma*sigma);
+      res[i].push_back(gaussianVal);
+      sum += gaussianVal;
+    }
+    
+  }
+
+  for (size_t i = 0; i < h; i++)
+  {
+    for (size_t j = 0; j < w; j++)
+    {
+      res[i][j] /= sum;
+    }
+    
+  }
+  return res;
+  
 }
