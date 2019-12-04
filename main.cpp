@@ -1,4 +1,7 @@
 
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+#include <boost/filesystem.hpp>
+#undef BOOST_NO_CXX11_SCOPED_ENUMS
 #include <string>
 #include <iostream>
 #include <list>
@@ -9,8 +12,8 @@
 using namespace std;
 
 using namespace Magick;
+using namespace boost::filesystem;
 
-Image applyFilterGaussian(Image &image, vector<vector<double>> kernel);
 
 Image applyFilterGrayScale(Image &image);
 Image applyFilterGrayScaleParallel(Image &image,int numT);
@@ -27,7 +30,28 @@ int main( int argc, char const *argv[])
     Image model;
     if (isFolder)
     {
-      /* code */
+      path p(argv[3]);
+      directory_iterator itr(p);
+      if(type.compare("-s") == 0){
+
+        for (auto i : itr)
+        {
+          string img = i.path().string();
+          model = Image(img);
+          cout<<argv[4]<<img.substr(2)<<endl;
+          applyFilterGrayScale(model).write(argv[4]+img.substr(2));
+        }
+      }
+      else
+      {
+        for (auto i : itr)
+        {
+          string img = i.path().string();
+          model = Image(img);
+          cout<<argv[4]<<img.substr(2)<<endl;
+          applyFilterGrayScaleParallel(model,2).write(argv[4]+img.substr(2));
+        }
+      }
     }
     else
     {
@@ -52,27 +76,6 @@ int main( int argc, char const *argv[])
       }
        
     }
-    
-    
-    // else if(type.compare("-p") == 0){
-      // model = Image(argv[2]);
-      // if(argc > 3){
-      //   applyFilterGrayScale(model).write(argv[4]);
-      // }else
-      // {
-      //   applyFilterGrayScale(model).write("newGrayScaleImage.jpeg");
-      // }
-    // }
-    // else if(type.compare("-gaus") == 0){
-    //   vector<vector<double>> kernel = getGaussianKernel(5,5,10.0);
-    //   model = Image(argv[2]);
-    //   if(argc > 3){
-    //     applyFilterGaussian(model,kernel).write(argv[4]);
-    //   }else
-    //   {
-    //     applyFilterGaussian(model,kernel).write("newGrayScaleImage.jpeg");
-    //   }
-    // }
 	}
   else
   {
@@ -131,7 +134,7 @@ Image applyFilterGrayScale(Image &image)
   imgN.modifyImage();
 
   MagickCore::Quantum *pixels = imgN.getPixels(0,0,imageW,imageH);
-  int i,j,h,w;
+  int i,j;
   for (i=0 ; i<imageH ; i++) {
     for (j=0 ; j<imageW ; j++) {
       unsigned offset = imgN.channels() * (imageW * i + j);
@@ -176,32 +179,4 @@ Image applyFilterGrayScaleParallel(Image &image,int numT)
 
   imgN.syncPixels();
   return imgN;
-}
-
-vector<vector<double>> getGaussianKernel(int w, int h,double sigma)
-{
-  vector<vector<double>> res = vector<vector<double>>();
-  double sum = 0.0;
-  for (size_t i = 0; i < h; i++)
-  {
-    res.push_back(vector<double>());
-    for (size_t j = 0; j < w; j++)
-    {
-      double gaussianVal = exp(-(i*i+j*j)/(2*sigma*sigma))/(2*M_PI*sigma*sigma);
-      res[i].push_back(gaussianVal);
-      sum += gaussianVal;
-    }
-    
-  }
-
-  for (size_t i = 0; i < h; i++)
-  {
-    for (size_t j = 0; j < w; j++)
-    {
-      res[i][j] /= sum;
-    }
-    
-  }
-  return res;
-  
 }
