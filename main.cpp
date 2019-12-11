@@ -46,14 +46,21 @@ int main( int argc, char const *argv[])
       }
       else
       {
-        GET_TIME(start);
         int threads = stoi(argv[argc -1]);
+        vector<string> files;
         for (auto i : itr)
         {
           string img = i.path().string();
-          model = Image(img);
-          cout<<argv[4]<<img.substr(2)<<endl;
-          applyFilterGrayScaleParallel(model,threads).write(argv[4]+img.substr(2));
+          files.push_back(img);
+        }
+
+        GET_TIME(start);
+        #pragma omp parallel for num_threads(threads) schedule(dynamic,5)
+        for (unsigned i = 0; i < files.size() ; i++)
+        {
+          Image m = Image(files[i]);
+          cout<<argv[4]<<files[i].substr(2)<<endl;
+          applyFilterGrayScale(m).write(argv[4]+files[i].substr(2));
         }
         GET_TIME(finish);
         cout<<"Num Threads: "<<threads<<endl;
