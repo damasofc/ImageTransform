@@ -55,7 +55,7 @@ int main( int argc, char const *argv[])
         }
 
         GET_TIME(start);
-        #pragma omp parallel for num_threads(threads) schedule(dynamic,5)
+        #pragma omp parallel for num_threads(threads) schedule(dynamic,1)
         for (unsigned i = 0; i < files.size() ; i++)
         {
           Image m = Image(files[i]);
